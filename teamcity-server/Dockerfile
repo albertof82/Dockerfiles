@@ -7,26 +7,22 @@ ENV TEAMCITY_DATA_PATH=/data/teamcity_server/datadir \
     LANG=C.UTF-8
 
 EXPOSE 8111
-LABEL dockerImage.teamcity.version="latest" \
-    dockerImage.teamcity.buildNumber="latest"
+RUN mkdir -p $TEAMCITY_DATA_PATH $TEAMCITY_DIST $TEAMCITY_LOGS
 
 RUN apt-get update && \
-    apt-get install -y git mercurial ca-certificates && \
+    apt-get install -y git mercurial ca-certificates wget && \
     apt-get clean all
 
-RUN apt install -y python-pip && pip install awscli
+RUN apt install -y python-pip && pip install awscli &&  \
+    wget https://download-cf.jetbrains.com/teamcity/TeamCity-2019.1.3.tar.gz -P $TEAMCITY_DIST/ && \
+    tar -xvzf $TEAMCITY_DIST/TeamCity-2019.1.3.tar.gz --strip-components=1 -C $TEAMCITY_DIST
 
 COPY run-server.sh /run-server.sh
 COPY run-services.sh /run-services.sh
 
-RUN chmod +x  /run-server.sh /run-services.sh && sync && \
-    groupadd -g 1000 tcuser && \
-    useradd -r -u 1000 -g tcuser tcuser 
-RUN mkdir -p /dist/teamcity
-COPY --chown=tcuser:tcuser dist/teamcity $TEAMCITY_DIST
-
+RUN chmod +x  /run-server.sh /run-services.sh && sync
 
 VOLUME $TEAMCITY_DATA_PATH \
     $TEAMCITY_LOGS
-
+RUN ls /opt/teamcity
 CMD ["/run-services.sh"]
